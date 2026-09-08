@@ -1,0 +1,71 @@
+contract:
+  name: phase6_scores
+  version: 1.0.0
+  description: Calculate product scores and assign available enrichment references
+
+input:
+  datasets:
+    - product_variants
+    - product_nutrition
+  required_columns:
+    - external_id
+    - source_retailer
+  optional_columns:
+    - product_group_id
+    - variant_attributes
+    - calories
+    - fat
+    - saturated_fat
+    - carbohydrates
+    - sugars
+    - fibre
+    - protein
+    - sodium
+
+output:
+  dataset: product_scores
+  columns:
+    - external_id
+    - source_retailer
+    - product_group_id
+    - nutri_score
+    - agribalyse_reference
+    - score_status
+
+processing:
+  does:
+    - calculate_nutri_score
+    - assign_agribalyse_reference
+    - preserve_product_identifiers
+    - report_uncomputable_scores
+
+  does_not:
+    - modify_product_identity
+    - classify_products
+    - assign_taxonomy
+    - create_product_groups
+    - create_product_variants
+    - modify_nutrition_values
+    - infer_missing_nutrition_values
+
+quality:
+  critical:
+    - missing_external_id
+    - missing_source_retailer
+    - invalid_score_input
+
+  warnings:
+    - incomplete_nutrition_for_score
+    - missing_agribalyse_reference
+    - score_not_computable
+
+identifiers:
+  primary_key:
+    - source_retailer
+    - external_id
+
+lineage:
+  source:
+    - phase4_variants
+    - phase5_nutrition
+  pipeline_version: 1.0.0

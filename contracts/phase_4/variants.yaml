@@ -1,0 +1,57 @@
+contract:
+  name: phase4_variants
+  version: 1.0.0
+  description: Model product variants within existing product groups
+
+input:
+  dataset: grouped_products
+  required_columns:
+    - external_id
+    - source_retailer
+    - product_group_id
+    - variant_attributes
+
+output:
+  dataset: product_variants
+  columns:
+    - external_id
+    - source_retailer
+    - product_group_id
+    - variant_attributes
+
+processing:
+  does:
+    - standardize_variant_attributes
+    - model_product_variants
+    - link_variants_to_product_groups
+    - preserve_source_identifiers
+
+  does_not:
+    - create_product_groups
+    - classify_products
+    - assign_taxonomy
+    - merge_products
+    - modify_product_identity
+    - calculate_nutrition
+    - calculate_nutri_score
+    - infer_missing_values
+
+quality:
+  critical:
+    - missing_external_id
+    - missing_source_retailer
+    - missing_product_group_id
+
+  warnings:
+    - missing_variant_attributes
+    - ambiguous_variant_attributes
+    - incomplete_variant_information
+
+identifiers:
+  primary_key:
+    - source_retailer
+    - external_id
+
+lineage:
+  source: phase3_classification_grouping
+  pipeline_version: 1.0.0

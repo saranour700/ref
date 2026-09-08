@@ -1,0 +1,67 @@
+contract:
+  name: phase3_classification_grouping
+  version: 1.0.0
+  description: Classify products, assign taxonomy categories, and create product groups
+
+input:
+  dataset: standardized_products
+  required_columns:
+    - external_id
+    - source_retailer
+    - title
+    - product_name
+  optional_columns:
+    - brand
+    - barcode
+    - identity_attributes
+    - variant_attributes
+    - ingredients_text
+    - description
+
+output:
+  dataset: grouped_products
+  columns:
+    - external_id
+    - source_retailer
+    - product_name
+    - product_domain
+    - taxonomy_id
+    - taxonomy_category
+    - product_group_id
+    - classification_status
+
+processing:
+  does:
+    - classify_product_domain
+    - assign_reference_taxonomy
+    - create_product_groups
+    - assign_products_to_groups
+    - preserve_source_identifiers
+
+  does_not:
+    - create_product_variants
+    - merge_variant_attributes
+    - calculate_scores
+    - modify_source_records
+    - invent_missing_values
+
+quality:
+  critical:
+    - missing_product_identity
+    - invalid_taxonomy_id
+    - invalid_product_group_id
+
+  warnings:
+    - ambiguous_classification
+    - ambiguous_grouping
+    - unknown_product_domain
+    - missing_optional_input
+
+identifiers:
+  primary_key:
+    - source_retailer
+    - external_id
+
+lineage:
+  source: phase2_identity
+  pipeline_version: 1.0.0

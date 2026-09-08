@@ -1,0 +1,75 @@
+contract:
+  name: phase5_nutrition
+  version: 1.0.0
+  description: Standardize and validate product nutrition data
+
+input:
+  dataset: product_variants
+  required_columns:
+    - external_id
+    - source_retailer
+  optional_columns:
+    - product_group_id
+    - variant_attributes
+    - nutrition_text
+    - calories
+    - fat
+    - saturated_fat
+    - carbohydrates
+    - sugars
+    - fibre
+    - protein
+    - sodium
+
+output:
+  dataset: product_nutrition
+  columns:
+    - external_id
+    - source_retailer
+    - product_group_id
+    - calories
+    - fat
+    - saturated_fat
+    - carbohydrates
+    - sugars
+    - fibre
+    - protein
+    - sodium
+
+processing:
+  does:
+    - standardize_nutrition_fields
+    - validate_nutrition_values
+    - link_nutrition_to_products
+    - preserve_missing_values
+
+  does_not:
+    - classify_products
+    - assign_taxonomy
+    - create_product_groups
+    - create_product_variants
+    - infer_missing_nutrition
+    - modify_product_identity
+    - calculate_nutri_score
+    - assign_agribalyse_reference
+
+quality:
+  critical:
+    - missing_external_id
+    - missing_source_retailer
+    - invalid_nutrition_type
+
+  warnings:
+    - missing_nutrition_fields
+    - invalid_nutrition_value
+    - incomplete_nutrition_data
+    - missing_serving_information
+
+identifiers:
+  primary_key:
+    - source_retailer
+    - external_id
+
+lineage:
+  source: phase4_variants
+  pipeline_version: 1.0.0

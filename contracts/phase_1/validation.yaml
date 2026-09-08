@@ -1,0 +1,83 @@
+contract:
+  name: phase1_validation
+  version: 1.0.0
+  description: Validate ingested product data before downstream processing
+
+input:
+  dataset: raw_products
+  required_columns:
+    - external_id
+    - brand
+    - title
+    - source_retailer
+    - source_url
+  optional_columns:
+    - barcode
+    - size_amount
+    - size_unit
+    - price
+    - currency
+    - image_url
+    - description
+    - ingredients_text
+    - nutrition_text
+
+output:
+  dataset: validated_products
+  columns:
+    - external_id
+    - brand
+    - title
+    - source_retailer
+    - source_url
+    - barcode
+    - size_amount
+    - size_unit
+    - price
+    - currency
+    - image_url
+    - description
+    - ingredients_text
+    - nutrition_text
+
+processing:
+  does:
+    - validate_schema
+    - validate_required_fields
+    - validate_data_types
+    - detect_duplicate_records
+    - validate_source_identifiers
+    - validate_basic_source_fields
+
+  does_not:
+    - clean_product_titles
+    - normalize_product_data
+    - extract_product_identity
+    - classify_products
+    - assign_taxonomy
+    - create_product_groups
+    - create_product_variants
+    - merge_products
+    - infer_missing_values
+
+quality:
+  critical:
+    - missing_required_columns
+    - missing_required_values
+    - invalid_required_types
+    - invalid_primary_key
+
+  warnings:
+    - missing_brand
+    - missing_barcode
+    - missing_price
+    - missing_optional_fields
+
+identifiers:
+  primary_key:
+    - source_retailer
+    - external_id
+
+lineage:
+  source: product_ingestion
+  pipeline_version: 1.0.0

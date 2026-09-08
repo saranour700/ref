@@ -1,0 +1,75 @@
+contract:
+  name: phase2_identity
+  version: 1.0.0
+  description: Build a standardized product identity representation from validated product data
+
+input:
+  dataset: validated_products
+  required_columns:
+    - external_id
+    - source_retailer
+    - brand
+    - title
+  optional_columns:
+    - barcode
+    - size_amount
+    - size_unit
+    - description
+    - ingredients_text
+    - nutrition_text
+    - image_url
+    - price
+    - currency
+
+output:
+  dataset: standardized_products
+  columns:
+    - external_id
+    - source_retailer
+    - barcode
+    - brand
+    - title
+    - product_name
+    - identity_attributes
+    - variant_attributes
+    - size_amount
+    - size_unit
+
+processing:
+  does:
+    - standardize_product_fields
+    - extract_product_name
+    - identify_identity_attributes
+    - separate_identity_attributes_from_variant_attributes
+    - preserve_source_identifiers
+
+  does_not:
+    - classify_products
+    - assign_taxonomy
+    - create_product_groups
+    - create_product_variants
+    - merge_products
+    - calculate_scores
+    - invent_missing_values
+
+quality:
+  critical:
+    - missing_external_id
+    - missing_source_retailer
+    - missing_product_identity
+
+  warnings:
+    - missing_brand
+    - missing_barcode
+    - missing_size
+    - ambiguous_product_identity
+    - missing_optional_identity_attributes
+
+identifiers:
+  primary_key:
+    - source_retailer
+    - external_id
+
+lineage:
+  source: phase1_validation
+  pipeline_version: 1.0.0

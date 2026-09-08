@@ -1,0 +1,68 @@
+contract:
+  name: product_ingestion
+  version: 1.0.0
+  description: Contract for standardized retailer product data entering the pipeline
+
+input:
+  dataset: retailer_adapter_output
+  required_columns:
+    - external_id
+    - brand
+    - title
+    - source_retailer
+    - source_url
+  optional_columns:
+    - barcode
+    - size_amount
+    - size_unit
+    - price
+    - currency
+    - image_url
+    - description
+    - ingredients_text
+    - nutrition_text
+
+output:
+  dataset: raw_products
+  columns:
+    - external_id
+    - brand
+    - title
+    - source_retailer
+    - source_url
+    - barcode
+    - size_amount
+    - size_unit
+    - price
+    - currency
+    - image_url
+    - description
+    - ingredients_text
+    - nutrition_text
+
+processing:
+  does:
+    - map_retailer_fields
+    - rename_fields
+    - coerce_primitive_types
+    - preserve_source_identifiers
+    - preserve_provenance
+
+  does_not:
+    - infer_external_id
+    - modify_barcode
+    - assign_taxonomy
+    - create_product_groups
+    - create_product_variants
+    - calculate_scores
+    - infer_missing_values
+    - silently_drop_records
+
+identifiers:
+  primary_key:
+    - source_retailer
+    - external_id
+
+lineage:
+  source: retailer_adapter
+  pipeline_version: 1.0.0
