@@ -1,75 +1,100 @@
 contract:
   name: phase5_nutrition
   version: 1.0.0
-  description: Standardize and validate product nutrition data
+  description: Standardize, validate, and link nutrition data to retailer products
 
 input:
-  dataset: product_variants
+  dataset: nutrition_data
   required_columns:
     - external_id
     - source_retailer
+
   optional_columns:
-    - product_group_id
-    - variant_attributes
-    - nutrition_text
+    - serving_size
     - calories
-    - fat
-    - saturated_fat
-    - carbohydrates
-    - sugars
-    - fibre
-    - protein
-    - sodium
+    - fat_g
+    - saturated_fat_g
+    - monounsaturated_fat_g
+    - polyunsaturated_fat_g
+    - omega6_g
+    - omega3_g
+    - sugar_alcohols_g
+    - carbohydrate_g
+    - fibre_g
+    - sugars_g
+    - protein_g
+    - sodium_mg
+    - potassium_mg
+    - calcium_mg
+    - iron_mg
+    - cholesterol_mg
 
 output:
   dataset: product_nutrition
+  grain: one nutrition record per retailer product
   columns:
     - external_id
     - source_retailer
-    - product_group_id
+    - serving_size
     - calories
-    - fat
-    - saturated_fat
-    - carbohydrates
-    - sugars
-    - fibre
-    - protein
-    - sodium
+    - fat_g
+    - saturated_fat_g
+    - monounsaturated_fat_g
+    - polyunsaturated_fat_g
+    - omega6_g
+    - omega3_g
+    - sugar_alcohols_g
+    - carbohydrate_g
+    - fibre_g
+    - sugars_g
+    - protein_g
+    - sodium_mg
+    - potassium_mg
+    - calcium_mg
+    - iron_mg
+    - cholesterol_mg
+    - nutrition_source
+    - scraped_at
 
 processing:
   does:
-    - standardize_nutrition_fields
     - validate_nutrition_values
+    - normalize_nutrition_units
+    - standardize_nutrition_fields
     - link_nutrition_to_products
     - preserve_missing_values
+    - preserve_source_identifiers
 
   does_not:
-    - classify_products
-    - assign_taxonomy
     - create_product_groups
     - create_product_variants
-    - infer_missing_nutrition
     - modify_product_identity
-    - calculate_nutri_score
-    - assign_agribalyse_reference
+    - invent_nutrition_values
+    - calculate_product_scores
 
 quality:
   critical:
     - missing_external_id
     - missing_source_retailer
-    - invalid_nutrition_type
+    - invalid_nutrition_value
+    - invalid_nutrition_unit
 
   warnings:
-    - missing_nutrition_fields
-    - invalid_nutrition_value
-    - incomplete_nutrition_data
-    - missing_serving_information
+    - missing_nutrition_record
+    - missing_nutrition_field
+    - unmatched_nutrition_record
 
-identifiers:
-  primary_key:
-    - source_retailer
-    - external_id
+failure_handling:
+  statuses:
+    PASS: continue
+    WARNING: continue_and_report
+    AMBIGUOUS: quarantine_for_review
+    FAIL: stop
+
+versioning:
+  schema_version: 1.0.0
+  rules_version: 1.0.0
 
 lineage:
-  source: phase4_variants
+  source: nutrition_source
   pipeline_version: 1.0.0

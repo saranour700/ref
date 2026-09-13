@@ -1,83 +1,107 @@
 contract:
   name: phase1_validation
   version: 1.0.0
-  description: Validate ingested product data before downstream processing
+  description: Validate ingested retailer product data before downstream processing
 
 input:
   dataset: raw_products
   required_columns:
     - external_id
-    - brand
-    - title
     - source_retailer
-    - source_url
-  optional_columns:
-    - barcode
-    - size_amount
-    - size_unit
-    - price
-    - currency
-    - image_url
-    - description
-    - ingredients_text
-    - nutrition_text
+    - title
 
 output:
   dataset: validated_products
+  grain: one record per retailer product
   columns:
     - external_id
-    - brand
-    - title
     - source_retailer
-    - source_url
+    - title
+    - brand
     - barcode
+    - description
+    - ingredients_text
+    - nutrition_text
+    - image_url
     - size_amount
     - size_unit
     - price
     - currency
-    - image_url
-    - description
-    - ingredients_text
-    - nutrition_text
+    - scraped_at
 
-processing:
-  does:
-    - validate_schema
-    - validate_required_fields
-    - validate_data_types
-    - detect_duplicate_records
-    - validate_source_identifiers
-    - validate_basic_source_fields
-
-  does_not:
-    - clean_product_titles
-    - normalize_product_data
-    - extract_product_identity
-    - classify_products
-    - assign_taxonomy
-    - create_product_groups
-    - create_product_variants
-    - merge_products
-    - infer_missing_values
-
-quality:
-  critical:
-    - missing_required_columns
-    - missing_required_values
-    - invalid_required_types
-    - invalid_primary_key
-
-  warnings:
-    - missing_brand
-    - missing_barcode
-    - missing_price
-    - missing_optional_fields
-
-identifiers:
+keys:
   primary_key:
     - source_retailer
     - external_id
 
+constraints:
+  required:
+    - external_id
+    - source_retailer
+    - title
+
+  nullable:
+    - brand
+    - barcode
+    - description
+    - ingredients_text
+    - nutrition_text
+    - image_url
+    - size_amount
+    - size_unit
+    - price
+    - currency
+    - scraped_at
+
+  uniqueness:
+    - source_retailer
+    - external_id
+
+quality:
+  critical:
+    - missing_external_id
+    - missing_source_retailer
+    - missing_title
+    - duplicate_external_id_within_retailer
+    - invalid_required_data_type
+
+  warnings:
+    - missing_brand
+    - missing_barcode
+    - missing_size
+    - missing_optional_column
+    - new_optional_column
+
+failure_handling:
+  statuses:
+    PASS: continue
+    WARNING: continue_and_report
+    AMBIGUOUS: quarantine_for_review
+    FAIL: stop
+
+processing:
+  does:
+    - validate_required_columns
+    - validate_data_types
+    - detect_duplicates
+    - detect_missing_required_values
+    - detect_schema_changes
+    - clean_useless_columns
+    - preserve_valid_records
+    - produce_quality_report
+
+  does_not:
+    - classify_products
+    - assign_taxonomy
+    - create_product_groups
+    - create_variants
+    - calculate_scores
+    - invent_missing_values
+
+versioning:
+  schema_version: 1.0.0
+  rules_version: 1.0.0
+
 lineage:
-  source: product_ingestion
+  source: ingestion
   pipeline_version: 1.0.0

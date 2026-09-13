@@ -10,6 +10,7 @@ input:
     - source_retailer
     - brand
     - title
+
   optional_columns:
     - barcode
     - size_amount
@@ -23,6 +24,7 @@ input:
 
 output:
   dataset: standardized_products
+  grain: one record per retailer product
   columns:
     - external_id
     - source_retailer
@@ -41,7 +43,9 @@ processing:
     - extract_product_name
     - identify_identity_attributes
     - separate_identity_attributes_from_variant_attributes
+    - normalize_units
     - preserve_source_identifiers
+    - generate_deterministic_identity_representation
 
   does_not:
     - classify_products
@@ -62,13 +66,40 @@ quality:
     - missing_brand
     - missing_barcode
     - missing_size
-    - ambiguous_product_identity
     - missing_optional_identity_attributes
+
+  ambiguous:
+    - ambiguous_identity
+    - ambiguous_normalization
+
+failure_handling:
+  statuses:
+    PASS: continue
+    WARNING: continue_and_report
+    AMBIGUOUS: quarantine_for_review
+    FAIL: stop
+
+ambiguity:
+  signals:
+    - missing_identity_evidence
+    - conflicting_identity_attributes
+    - competing_identity_candidates
+    - semantic_uncertainty
+
+  resume_from: phase_2
 
 identifiers:
   primary_key:
     - source_retailer
     - external_id
+
+  identity_hash:
+    deterministic: true
+    rules_versioned: true
+
+versioning:
+  schema_version: 1.0.0
+  rules_version: 1.0.0
 
 lineage:
   source: phase1_validation

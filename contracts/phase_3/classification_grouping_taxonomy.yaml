@@ -1,66 +1,126 @@
 contract:
-  name: phase3_classification_grouping
+  name: phase3_classification_taxonomy_grouping
   version: 1.0.0
-  description: Classify products, assign taxonomy categories, and create product groups
+  description: Classify products, assign Reference DB taxonomy, and group products by identity
 
 input:
   dataset: standardized_products
   required_columns:
     - external_id
     - source_retailer
-    - title
     - product_name
-  optional_columns:
-    - brand
-    - barcode
     - identity_attributes
     - variant_attributes
-    - ingredients_text
-    - description
 
 output:
-  dataset: grouped_products
-  columns:
-    - external_id
-    - source_retailer
-    - product_name
-    - product_domain
-    - taxonomy_id
-    - taxonomy_category
-    - product_group_id
-    - classification_status
+  datasets:
+    classification:
+      name: product_classification
+
+    taxonomy:
+      name: product_taxonomy
+
+    grouping:
+      name: product_groups
+
+  grain:
+    classification: one record per retailer product
+    taxonomy: one record per retailer product
+    grouping: one record per retailer product
 
 processing:
   does:
-    - classify_product_domain
-    - assign_reference_taxonomy
-    - create_product_groups
-    - assign_products_to_groups
+    - classify_food_and_non_food_products
+    - assign_reference_db_taxonomy
+    - generate_group_candidates
+    - group_products_by_core_identity
+    - calculate_grouping_confidence
+    - identify_ambiguous_grouping_cases
     - preserve_source_identifiers
 
   does_not:
-    - create_product_variants
-    - merge_variant_attributes
-    - calculate_scores
-    - modify_source_records
+    - create_variants
+    - merge_source_records
+    - overwrite_source_values
+    - calculate_product_scores
     - invent_missing_values
+
+classification:
+  values:
+    - food
+    - non_food
+    - unknown
+
+taxonomy:
+  categories:
+    - DAIRY
+    - MEAT_SEAFOOD
+    - BEVERAGES
+    - BAKERY
+    - FROZEN
+    - PRODUCE
+    - CONDIMENTS_SAUCES
+    - CONFECTIONERY
+    - SNACKS
+    - PASTA_RICE
+    - BREAKFAST
+    - CANNED_GOODS
+    - GENERAL_GROCERY
+    - HOUSEHOLD_CLEANING
+    - HEALTH_REMEDIES
+    - PERSONAL_CARE
+    - BABY_CARE
+    - PET_FOOD
+    - HOUSEHOLD_SUPPLIES
+
+grouping:
+  principles:
+    - group_by_core_product_identity
+    - preserve_meaningful_identity_attributes
+    - do_not_group_by_size_alone
+    - do_not_use_fuzzy_similarity_as_final_decision
+    - use_fuzzy_matching_for_candidate_generation
+    - preserve_ambiguous_cases_for_review
+
+  identifiers:
+    group_id:
+      deterministic: true
+      rules_versioned: true
 
 quality:
   critical:
     - missing_product_identity
-    - invalid_taxonomy_id
-    - invalid_product_group_id
+    - invalid_taxonomy_category
 
   warnings:
-    - ambiguous_classification
-    - ambiguous_grouping
-    - unknown_product_domain
-    - missing_optional_input
+    - missing_optional_classification_evidence
+    - missing_optional_taxonomy_evidence
 
-identifiers:
-  primary_key:
-    - source_retailer
-    - external_id
+  ambiguous:
+    - ambiguous_classification
+    - ambiguous_taxonomy
+    - ambiguous_grouping
+
+failure_handling:
+  statuses:
+    PASS: continue
+    WARNING: continue_and_report
+    AMBIGUOUS: quarantine_for_review
+    FAIL: stop
+
+ambiguity:
+  signals:
+    - missing_evidence
+    - conflicting_evidence
+    - competing_candidates
+    - close_candidate_scores
+    - semantic_conflict
+
+  resume_from: phase_3
+
+versioning:
+  schema_version: 1.0.0
+  rules_version: 1.0.0
 
 lineage:
   source: phase2_identity

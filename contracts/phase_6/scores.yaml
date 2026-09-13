@@ -1,71 +1,67 @@
 contract:
   name: phase6_scores
   version: 1.0.0
-  description: Calculate product scores and assign available enrichment references
+  description: Calculate product scores and attach available external enrichment references
 
 input:
   datasets:
-    - product_variants
-    - product_nutrition
-  required_columns:
-    - external_id
-    - source_retailer
-  optional_columns:
-    - product_group_id
-    - variant_attributes
-    - calories
-    - fat
-    - saturated_fat
-    - carbohydrates
-    - sugars
-    - fibre
-    - protein
-    - sodium
+    product_metadata:
+      required:
+        - external_id
+        - source_retailer
+
+    product_nutrition:
+      optional: true
 
 output:
   dataset: product_scores
+  grain: one score/enrichment record per retailer product
   columns:
     - external_id
     - source_retailer
-    - product_group_id
     - nutri_score
     - agribalyse_reference
-    - score_status
+    - score_confidence
+    - enrichment_source
+    - calculated_at
 
 processing:
   does:
-    - calculate_nutri_score
-    - assign_agribalyse_reference
-    - preserve_product_identifiers
-    - report_uncomputable_scores
+    - calculate_available_product_scores
+    - attach_available_external_references
+    - calculate_score_confidence
+    - preserve_source_identifiers
+    - preserve_missing_enrichment
 
   does_not:
     - modify_product_identity
-    - classify_products
-    - assign_taxonomy
     - create_product_groups
     - create_product_variants
-    - modify_nutrition_values
-    - infer_missing_nutrition_values
+    - invent_missing_scores
+    - treat_scores_as_product_identity
 
 quality:
   critical:
     - missing_external_id
     - missing_source_retailer
-    - invalid_score_input
+    - invalid_score_value
 
   warnings:
-    - incomplete_nutrition_for_score
-    - missing_agribalyse_reference
-    - score_not_computable
+    - missing_nutrition_for_score
+    - missing_external_reference
+    - unavailable_score
 
-identifiers:
-  primary_key:
-    - source_retailer
-    - external_id
+failure_handling:
+  statuses:
+    PASS: continue
+    WARNING: continue_and_report
+    AMBIGUOUS: quarantine_for_review
+    FAIL: stop
+
+versioning:
+  schema_version: 1.0.0
+  rules_version: 1.0.0
 
 lineage:
-  source:
-    - phase4_variants
-    - phase5_nutrition
+  source: phase5_nutrition
   pipeline_version: 1.0.0

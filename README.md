@@ -172,3 +172,25 @@ pytest
 The repository currently contains the project architecture, contracts, and implementation skeleton.
 
 Pipeline phases are being implemented incrementally and tested independently before being integrated into the complete workflow.
+
+## Quality Gates & Review
+
+Each phase produces a quality result that determines whether its output can continue.
+
+Possible statuses are:
+
+- `PASS` — continue normally.
+- `WARNING` — continue and report the issue.
+- `AMBIGUOUS` — quarantine the record for review.
+- `FAIL` — stop processing the affected pipeline path.
+
+Ambiguity is detected by the phase responsible for the decision.
+
+For example:
+
+- Phase 2 → ambiguous identity or normalization.
+- Phase 3 → ambiguous classification, taxonomy, or grouping.
+- Phase 4 → ambiguous variant.
+
+Review is not a separate pipeline phase. After a decision is recorded, the affected record can be reprocessed from the phase where the ambiguity occurred.
+

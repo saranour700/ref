@@ -1,57 +1,91 @@
 contract:
   name: phase4_variants
   version: 1.0.0
-  description: Model product variants within existing product groups
+  description: Identify and model meaningful product variants within product groups
 
 input:
-  dataset: grouped_products
+  dataset: product_groups
   required_columns:
     - external_id
     - source_retailer
-    - product_group_id
+    - group_id
+    - identity_attributes
     - variant_attributes
 
 output:
   dataset: product_variants
+  grain: one record per retailer product variant
   columns:
+    - variant_id
+    - group_id
     - external_id
     - source_retailer
-    - product_group_id
     - variant_attributes
 
 processing:
   does:
-    - standardize_variant_attributes
-    - model_product_variants
-    - link_variants_to_product_groups
+    - identify_variant_attributes
+    - separate_variants_from_core_identity
+    - generate_deterministic_variant_ids
+    - preserve_group_relationships
     - preserve_source_identifiers
 
   does_not:
     - create_product_groups
-    - classify_products
-    - assign_taxonomy
-    - merge_products
-    - modify_product_identity
-    - calculate_nutrition
-    - calculate_nutri_score
-    - infer_missing_values
+    - change_product_identity
+    - merge_unrelated_products
+    - calculate_scores
+    - invent_missing_values
+
+variant_attributes:
+  examples:
+    - size
+    - flavour
+    - package_type
+    - formulation
+    - fat_percentage
+    - fat_level
 
 quality:
   critical:
+    - missing_group_id
     - missing_external_id
     - missing_source_retailer
-    - missing_product_group_id
 
   warnings:
     - missing_variant_attributes
-    - ambiguous_variant_attributes
-    - incomplete_variant_information
+
+  ambiguous:
+    - ambiguous_variant
+
+failure_handling:
+  statuses:
+    PASS: continue
+    WARNING: continue_and_report
+    AMBIGUOUS: quarantine_for_review
+    FAIL: stop
+
+ambiguity:
+  signals:
+    - unclear_variant_attribute
+    - conflicting_variant_attributes
+    - competing_variant_interpretations
+
+  resume_from: phase_4
 
 identifiers:
   primary_key:
     - source_retailer
-    - external_id
+    - variant_id
+
+  variant_id:
+    deterministic: true
+    rules_versioned: true
+
+versioning:
+  schema_version: 1.0.0
+  rules_version: 1.0.0
 
 lineage:
-  source: phase3_classification_grouping
+  source: phase3_grouping
   pipeline_version: 1.0.0
