@@ -1,0 +1,299 @@
+contract:
+  name: retailer_adapter
+  version: 1.0.0
+  owner: reference-db
+  description: >
+    Defines the common product and nutrition schema produced by a
+    retailer-specific adapter before data enters the Reference DB ingestion
+    and processing phases.
+
+adapter:
+  responsibility:
+    - map retailer-specific source fields to the common Reference DB schema
+    - preserve source identifiers and source information
+    - normalize field names and basic data types
+    - keep products and nutrition as separate datasets
+    - preserve source-level provenance
+
+  does_not:
+    - classify products
+    - assign Reference DB taxonomy
+    - create product groups
+    - create variants
+    - calculate scores
+    - perform entity resolution
+
+datasets:
+
+  products:
+    grain: one record per retailer product/listing
+
+    schema:
+      product_id:
+        type: string
+        nullable: false
+
+      retailer_product_id:
+        type: string
+        nullable: false
+
+      product_name:
+        type: string
+        nullable: false
+
+      brand:
+        type: string
+        nullable: true
+
+      retailer:
+        type: string
+        nullable: false
+
+      private_label:
+        type: string
+        nullable: true
+
+      upc:
+        type: string
+        nullable: true
+
+      category:
+        type: string
+        nullable: true
+
+      size:
+        type: string
+        nullable: true
+
+      price:
+        type: double
+        nullable: true
+
+      price_currency:
+        type: string
+        nullable: true
+
+      is_available:
+        type: bool
+        nullable: true
+
+      image_url:
+        type: string
+        nullable: true
+
+      product_url:
+        type: string
+        nullable: true
+
+      source_url:
+        type: string
+        nullable: false
+
+      source:
+        type: string
+        nullable: false
+
+      scraped_at:
+        type: string
+        nullable: false
+
+    keys:
+      primary_key:
+        - retailer_product_id
+
+      source_identity:
+        - retailer
+        - retailer_product_id
+
+    quality:
+      critical:
+        - missing_retailer_product_id
+        - missing_product_name
+        - missing_retailer
+        - missing_source_url
+        - missing_source
+        - missing_scraped_at
+        - duplicate_retailer_product_id
+        - invalid_price_type
+        - invalid_availability_type
+
+      warnings:
+        - missing_brand
+        - missing_upc
+        - missing_category
+        - missing_size
+        - missing_price
+        - missing_image_url
+        - missing_product_url
+        - unexpected_source_field
+
+  nutrition:
+    grain: one nutrition record per retailer product
+
+    schema:
+      retailer_product_id:
+        type: string
+        nullable: false
+
+      product_name:
+        type: string
+        nullable: true
+
+      brand:
+        type: string
+        nullable: true
+
+      size:
+        type: string
+        nullable: true
+
+      serving_size:
+        type: string
+        nullable: true
+
+      upc:
+        type: string
+        nullable: true
+
+      calories:
+        type: double
+        nullable: true
+
+      fat_g:
+        type: double
+        nullable: true
+
+      saturated_fat_g:
+        type: double
+        nullable: true
+
+      monounsaturated_fat_g:
+        type: double
+        nullable: true
+
+      polyunsaturated_fat_g:
+        type: double
+        nullable: true
+
+      omega6_g:
+        type: double
+        nullable: true
+
+      omega3_g:
+        type: double
+        nullable: true
+
+      sugar_alcohols_g:
+        type: double
+        nullable: true
+
+      carbohydrate_g:
+        type: double
+        nullable: true
+
+      fibre_g:
+        type: double
+        nullable: true
+
+      sugars_g:
+        type: double
+        nullable: true
+
+      protein_g:
+        type: double
+        nullable: true
+
+      sodium_mg:
+        type: double
+        nullable: true
+
+      potassium_mg:
+        type: double
+        nullable: true
+
+      calcium_mg:
+        type: double
+        nullable: true
+
+      iron_mg:
+        type: double
+        nullable: true
+
+      cholesterol_mg:
+        type: double
+        nullable: true
+
+      scraped_at:
+        type: string
+        nullable: false
+
+    keys:
+      primary_key:
+        - retailer_product_id
+
+      foreign_keys:
+        - retailer_product_id -> products.retailer_product_id
+
+    quality:
+      critical:
+        - missing_retailer_product_id
+        - duplicate_retailer_product_id
+        - invalid_nutrition_type
+        - missing_scraped_at
+
+      warnings:
+        - missing_product_name
+        - missing_brand
+        - missing_size
+        - missing_serving_size
+        - missing_upc
+        - missing_optional_nutrient
+
+semantics:
+
+  retailer_product_id:
+    description: >
+      Identifier assigned to the product/listing by the source retailer.
+    type: string
+    globally_unique: false
+
+  product_id:
+    description: >
+      Product identifier produced or preserved by the retailer adapter.
+    type: string
+
+  upc:
+    description: >
+      Product barcode when available.
+    type: string
+    preserve_leading_zeros: true
+
+  price:
+    description: >
+      Source product price when available.
+    type: double
+
+  is_available:
+    description: >
+      Indicates whether the product is available according to the source.
+    type: bool
+
+  scraped_at:
+    description: >
+      Timestamp representing when the source record was collected.
+    type: string
+
+  nutrition:
+    null_semantics: >
+      NULL means the nutrient value is unavailable or was not provided by the
+      source. NULL must not be converted to zero.
+
+lineage:
+  required:
+    - source
+    - source_url
+    - scraped_at
+
+versioning:
+  schema_version: 1.0.0
+  rules_version: 1.0.0
