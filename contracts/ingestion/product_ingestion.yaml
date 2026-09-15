@@ -1,66 +1,75 @@
 contract:
   name: product_ingestion
-  version: 1.0.0
-  description: Ingest raw retailer product data into the Reference DB pipeline
+  version: 1.1.0
+  description: Ingest standardized retailer product data from the retailer adapter into the Reference DB pipeline
 
 input:
   source:
-    type: retailer
-    description: Raw product data produced by a retailer adapter
+    type: retailer_adapter
+    description: Standardized product data produced by a retailer adapter according to the retailer adapter contract
 
 output:
   dataset: raw_products
   grain: one record per retailer product
   columns:
-    - external_id
-    - source_retailer
-    - title
+    - product_id
+    - retailer_product_id
+    - product_name
     - brand
-    - barcode
-    - description
-    - ingredients_text
-    - nutrition_text
-    - image_url
-    - size_amount
-    - size_unit
+    - retailer
+    - private_label
+    - upc
+    - category
+    - size
     - price
-    - currency
+    - price_currency
+    - is_available
+    - image_url
+    - product_url
+    - source_url
+    - source
     - scraped_at
 
 keys:
   primary_key:
-    - source_retailer
-    - external_id
+    - retailer
+    - retailer_product_id
 
 constraints:
   required:
-    - external_id
-    - source_retailer
-    - title
-
-  nullable:
-    - brand
-    - barcode
-    - description
-    - ingredients_text
-    - nutrition_text
-    - image_url
-    - size_amount
-    - size_unit
-    - price
-    - currency
+    - retailer_product_id
+    - product_name
+    - retailer
+    - source_url
+    - source
     - scraped_at
 
+  nullable:
+    - product_id
+    - brand
+    - private_label
+    - upc
+    - category
+    - size
+    - price
+    - price_currency
+    - is_available
+    - image_url
+    - product_url
+
   uniqueness:
-    - source_retailer
-    - external_id
+    - retailer
+    - retailer_product_id
 
 processing:
   does:
-    - receive_data_from_retailer_adapter
+    - receive_standardized_data_from_retailer_adapter
     - preserve_source_identifiers
     - preserve_source_values
-    - attach_source_retailer
+    - preserve_source_provenance
+    - attach_retailer
+    - load_products_into_raw_layer
+    - detect_new_products_using_retailer_product_id
 
   does_not:
     - normalize_product_identity
@@ -69,21 +78,28 @@ processing:
     - create_product_groups
     - create_variants
     - calculate_scores
+    - perform_entity_resolution
+    - detect_product_updates
+    - detect_product_deletes
     - invent_missing_values
 
 quality:
   critical:
-    - missing_external_id
-    - missing_source_retailer
-    - missing_title
-    - duplicate_external_id_within_retailer
+    - missing_retailer_product_id
+    - missing_retailer
+    - missing_product_name
+    - missing_source_url
+    - missing_source
+    - missing_scraped_at
+    - duplicate_retailer_product_id_within_retailer
 
   warnings:
     - missing_brand
-    - missing_barcode
+    - missing_upc
     - missing_size
-    - missing_description
-    - missing_nutrition
+    - missing_price
+    - missing_image_url
+    - missing_product_url
 
 failure_handling:
   statuses:
@@ -93,7 +109,7 @@ failure_handling:
     FAIL: stop
 
 versioning:
-  schema_version: 1.0.0
+  schema_version: 1.1.0
   rules_version: 1.0.0
 
 lineage:
